@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. Spatial Database (For mapping wells)
+  nwis-postgis:
+    image: postgis/postgis:15-3.3
+    container_name: nwis-spatial-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: nwis_password
+      POSTGRES_DB: drilling_data
+    ports:
+      - "5432:5432"
+    networks:
+      - nwis-network
+
+  # 2. Vector Database (For RAG / PDF searching)
+  nwis-qdrant:
+    image: qdrant/qdrant:latest
+    container_name: nwis-vector-db
+    ports:
+      - "6333:6333"
+    networks:
+      - nwis-network
+
+  # 3. AI Predictive Backend (FastAPI + LightGBM)
+  nwis-api:
+    build: 
+      context: ./BACKEND
+    container_name: nwis-fastapi-backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - nwis-postgis
+      - nwis-qdrant
+    volumes:
+      - ./BACKEND:/app  # Maps your local folder so changes update instantly
+    networks:
+      - nwis-network
+
+networks:
+  nwis-network:
+    driver: bridge
