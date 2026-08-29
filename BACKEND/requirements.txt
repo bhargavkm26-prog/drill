@@ -7,3 +7,5 @@ lightgbm
 joblib
 scikit-learn
 requests
+python-multipart
+unstructured
