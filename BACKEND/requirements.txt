@@ -7,5 +7,12 @@ lightgbm
 joblib
 scikit-learn
 requests
+qdrant-client
+sentence-transformers
+langchain
 python-multipart
-unstructured
+surya-ocr
+torch
+torchvision
+pillow
+opencv-python

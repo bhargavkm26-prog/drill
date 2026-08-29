@@ -9,21 +9,23 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, W
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Enterprise Multimodal OCR Engine
+from multimodal_extractor import ProductionDocumentIntelligence
+
 # RAG & Embeddings
-from langchain_community.document_loaders import DirectoryLoader, UnstructuredLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
-app = FastAPI(title="OIL eRTMAC - Enterprise AI Engine", version="1.0.0")
+app = FastAPI(title="OIL eRTMAC - Enterprise AI Engine", version="2.0.0")
 
 # =========================================================
-# 1. CORS MIDDLEWARE (Enables React Frontend Communication)
+# 1. CORS MIDDLEWARE
 # =========================================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows Vite/React localhost origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,7 +35,6 @@ app.add_middleware(
 # 2. WEBSOCKET REAL-TIME BROADCASTER
 # =========================================================
 class ConnectionManager:
-    """Manages active WebSocket connections to broadcast telemetry to React UIs."""
     def __init__(self):
         self.active_connections: List[WebSocket] = []
 
@@ -56,23 +57,24 @@ manager = ConnectionManager()
 
 @app.websocket("/ws/telemetry")
 async def websocket_telemetry_endpoint(websocket: WebSocket):
-    """WebSocket stream for live gauges and industrial alerts in React."""
     await manager.connect(websocket)
     try:
         while True:
-            # Keeps the socket connection alive
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
 # =========================================================
-# 3. AI MODELS & VECTOR DATABASE INITIALIZATION
+# 3. AI MODELS, VLM PARSER & VECTOR DB INITIALIZATION
 # =========================================================
 try:
     model_stuck = joblib.load("models/stuck_pipe_model.pkl")
     model_loss = joblib.load("models/mud_loss_model.pkl")
 except Exception as e:
     model_stuck, model_loss = None, None
+
+# Initialize Deep-Learning Vision-Language OCR Parser
+doc_intelligence = ProductionDocumentIntelligence()
 
 QDRANT_URL = "http://localhost:6333"
 COLLECTION_NAME = "oil_india_ddr"
@@ -86,45 +88,46 @@ if not qdrant_client.collection_exists(COLLECTION_NAME):
     )
 
 os.makedirs("temp_uploads", exist_ok=True)
-
-# In-memory circular buffer for historical time-series charts (last 50 data frames)
 telemetry_history: List[dict] = []
 
 # =========================================================
-# 4. BACKGROUND WORKER: BULK & OCR DOCUMENT INGESTION
+# 4. BACKGROUND WORKER: ENTERPRISE MULTIMODAL INGESTION
 # =========================================================
 def process_bulk_directory_background(directory_path: str, source_name: str):
-    print(f"[*] Worker Crawling: {directory_path} ({source_name})")
+    print(f"[*] Enterprise Multimodal Worker Crawling: {directory_path} ({source_name})")
     try:
-        loader = DirectoryLoader(
-            directory_path, 
-            glob="**/*.*", 
-            loader_cls=UnstructuredLoader, 
-            loader_kwargs={"strategy": "hi_res", "ocr_languages": "eng"}
-        )
-        documents = loader.load()
-        if not documents:
-            return
-
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-        chunks = text_splitter.split_documents(documents)
-        
         points = []
-        for chunk in chunks:
-            vector = embeddings_model.embed_query(chunk.page_content)
-            source_file = chunk.metadata.get("source", source_name)
-            points.append(
-                PointStruct(
-                    id=str(uuid.uuid4()), 
-                    vector=vector, 
-                    payload={"page_content": chunk.page_content, "source": source_file}
-                )
-            )
+        # Recursively walk through directory to find document images/scans
+        for root, _, files in os.walk(directory_path):
+            for file in files:
+                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.pdf')):
+                    file_path = os.path.join(root, file)
+                    
+                    # Extract semantic text layout-agnostically using Deep Learning VLM
+                    raw_text = doc_intelligence.extract_text_from_document(file_path)
+                    
+                    if not raw_text.strip():
+                        continue
+
+                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+                    chunks = text_splitter.split_text(raw_text)
+                    
+                    for chunk in chunks:
+                        vector = embeddings_model.embed_query(chunk)
+                        points.append(
+                            PointStruct(
+                                id=str(uuid.uuid4()), 
+                                vector=vector, 
+                                payload={"page_content": chunk, "source": file}
+                            )
+                        )
         
-        qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points)
-        print(f"[+] Successfully indexed {len(chunks)} vectors from {source_name}.")
+        if points:
+            qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points)
+            print(f"[+] Successfully indexed {len(points)} multimodal vectors from {source_name}.")
+            
     except Exception as e:
-        print(f"[-] Document Ingestion Error ({source_name}): {e}")
+        print(f"[-] Enterprise Ingestion Error ({source_name}): {e}")
     finally:
         if os.path.exists(directory_path):
             shutil.rmtree(directory_path)
@@ -139,7 +142,7 @@ async def upload_drilling_report(background_tasks: BackgroundTasks, file: Upload
         shutil.copyfileobj(file.file, buffer)
         
     background_tasks.add_task(process_bulk_directory_background, staging_dir, file.filename)
-    return {"status": "queued", "message": f"Document '{file.filename}' queued for OCR & vector indexing."}
+    return {"status": "queued", "message": f"Document '{file.filename}' queued for Neural VLM OCR & vector indexing."}
 
 @app.post("/upload-bulk-archive")
 async def upload_bulk_archive(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
@@ -157,7 +160,7 @@ async def upload_bulk_archive(background_tasks: BackgroundTasks, file: UploadFil
         
     os.remove(archive_path)
     background_tasks.add_task(process_bulk_directory_background, extract_dir, file.filename)
-    return {"status": "queued", "message": f"Archive '{file.filename}' extracted. Batch OCR ingestion running."}
+    return {"status": "queued", "message": f"Archive '{file.filename}' extracted. Batch Neural VLM OCR running."}
 
 class SyncRequest(BaseModel):
     directory_path: str
@@ -167,7 +170,7 @@ async def sync_data_lake(request: SyncRequest, background_tasks: BackgroundTasks
     if not os.path.isdir(request.directory_path):
         raise HTTPException(status_code=404, detail="Directory path not found on server.")
     background_tasks.add_task(process_bulk_directory_background, request.directory_path, "Network_DataLake_Sync")
-    return {"status": "sync_started", "message": f"Crawling directory '{request.directory_path}'."}
+    return {"status": "sync_started", "message": f"Crawling directory '{request.directory_path}' using VLM pipeline."}
 
 # =========================================================
 # 5. REAL-TIME TELEMETRY & PREDICTION ENGINE
@@ -199,7 +202,6 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
 
     input_data = pd.DataFrame([telemetry.dict()])
 
-    # ML Probabilities & Physics Heuristics
     prob_stuck = float(model_stuck.predict_proba(input_data)[0][1]) * 100
     prob_loss = float(model_loss.predict_proba(input_data)[0][1]) * 100
     torque_spike_detected = telemetry.Torque_trend > 15.0
@@ -214,7 +216,6 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
 
     status_flag = "CRITICAL" if is_critical else "NORMAL"
 
-    # Contextual RAG Retrieval
     mitigation_strategy = "Continue standard operational parameters."
     source_document = "N/A"
     
@@ -222,16 +223,16 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
         query = f"Mitigation and standard operating procedure for {active_warnings[0]}"
         query_vector = embeddings_model.embed_query(query)
         
-        search_results = qdrant_client.search(
+        # Updated to the new Qdrant query_points API
+        search_response = qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
+            query=query_vector,
             limit=1
         )
         
-        if search_results:
-            mitigation_strategy = search_results[0].payload.get("page_content", "No mitigation record.")
-            source_document = search_results[0].payload.get("source", "Historical Log")
-
+        if search_response.points:
+            mitigation_strategy = search_response.points[0].payload.get("page_content", "No mitigation record.")
+            source_document = search_response.points[0].payload.get("source", "Historical Log")
     response_payload = {
         "status": "success",
         "severity": status_flag,
@@ -252,17 +253,13 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
         "alert": is_critical
     }
 
-    # Maintain a rolling window of recent frames
     telemetry_history.append(response_payload)
     if len(telemetry_history) > 50:
         telemetry_history.pop(0)
 
-    # Real-time WebSocket broadcast to all active React clients
     await manager.broadcast(response_payload)
-
     return response_payload
 
 @app.get("/telemetry/history")
 async def get_telemetry_history():
-    """Returns recent telemetry for historical graphing when frontend loads."""
     return telemetry_history
