@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { wells, type Well } from '../../data/wells'
 import WellMap from '../../components/WellMap'
 import { useAuth } from '../../context/AuthContext'
 
 function Explore() {
-  const navigate = useNavigate();
   const { user } = useAuth();
   // Default to 15/9-F-7 matching photo 1
   const [activeWell, setActiveWell] = useState<Well | null>(wells[1])

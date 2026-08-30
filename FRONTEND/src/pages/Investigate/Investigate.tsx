@@ -12,7 +12,8 @@ type Comparison = {
 }
 
 function Investigate() {
-  const { user } = useAuth();
+  const { user } = useAuth()
+
   const [selectedWellId, setSelectedWellId] = useState(
     wells[0]?.id ?? '',
   )
@@ -45,11 +46,13 @@ function Investigate() {
   }
 
   return (
-    <main className="min-h-screen bg-[#FAF9F6] text-black font-average">
+    <main className="min-h-screen w-full bg-[#f5f5f2] text-black">
 
-      {/* ================= NAVBAR ================= */}
+      {/* =========================================================
+          NAVIGATION
+      ========================================================= */}
 
-      <nav className="flex h-20 items-center justify-between border-b border-black/10 bg-[#ffdd47] px-8 text-black">
+      <nav className="flex h-20 w-full items-center justify-between border-b border-black/10 bg-[#ffdd47] px-8 text-black shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
 
         <Link
           to="/workspace"
@@ -64,7 +67,7 @@ function Investigate() {
             to="/workspace"
             className="transition hover:text-[#b78600]"
           >
-            EXPLORE / MAP
+            EXPLORE
           </Link>
 
           <Link
@@ -83,58 +86,86 @@ function Investigate() {
 
         </div>
 
-        {/* Standardized User Profile Pill */}
-        <div className="flex items-center gap-3 bg-black/10 px-3.5 py-1.5 rounded-full border border-black/15">
-          <div className="w-8 h-8 rounded-full bg-black text-[#FDB813] flex items-center justify-center font-extrabold text-sm shadow-xs">
-            {(user?.email || 'nsrivatsa084@gmail.com').charAt(0).toUpperCase()}
+        {/* USER PROFILE */}
+
+        <div className="flex items-center gap-3 rounded-full border border-black/15 bg-black/10 px-3.5 py-1.5">
+
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-sm font-extrabold text-[#FDB813] shadow-sm">
+            {(user?.email || 'nsrivatsa084@gmail.com')
+              .charAt(0)
+              .toUpperCase()}
           </div>
-          <div className="hidden sm:block text-left pr-1">
-            <p className="text-xs font-bold text-black leading-none">{user?.email || 'nsrivatsa084@gmail.com'}</p>
-            <p className="text-[9px] text-black/60 font-semibold mt-0.5">{user?.role || 'Lead Drilling Engineer'}</p>
+
+          <div className="hidden pr-1 text-left sm:block">
+
+            <p className="text-xs font-bold leading-none text-black">
+              {user?.email || 'nsrivatsa084@gmail.com'}
+            </p>
+
+            <p className="mt-0.5 text-[9px] font-semibold text-black/60">
+              {user?.role || 'Lead Drilling Engineer'}
+            </p>
+
           </div>
+
         </div>
 
       </nav>
 
 
-      {/* ================= PAGE ================= */}
+      {/* =========================================================
+          PAGE CONTENT
+      ========================================================= */}
 
-      <section className="px-8 md:px-12 pb-16 pt-12 max-w-[1500px] w-full mx-auto">
+      <section
+        style={{
+          width: 'calc(100% - 96px)',
+          maxWidth: '1500px',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          boxSizing: 'border-box',
+        }}
+        className="pb-20 pt-12"
+      >
 
-        <div className="w-full">
+        {/* =======================================================
+            HEADER
+        ======================================================= */}
 
-          {/* ================= HEADER ================= */}
+        <div className="mb-12">
 
-          <div className="mb-10 flex flex-wrap items-end justify-between gap-8">
+          <div className="flex flex-wrap items-end justify-between gap-10">
 
             <div>
 
-              <p className="mb-2 text-[10px] font-bold tracking-[0.25em] text-black/40">
+              <p className="mb-4 text-[10px] font-bold tracking-[0.25em] text-black/45">
                 INVESTIGATION
               </p>
 
-              <h1 className="text-6xl md:text-7xl font-extrabold tracking-[-0.04em]">
+              <h1 className="text-6xl font-extrabold leading-none tracking-[-0.05em] drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)] md:text-7xl">
                 CORRELATION
               </h1>
 
-              <p className="mt-3 max-w-2xl text-xs leading-6 text-black/45">
-                Compare the selected well against nearby wells to
-                identify related drilling conditions, events, and
-                trajectory characteristics.
+              <p className="mt-5 max-w-2xl text-sm leading-6 text-black/50">
+                Compare the selected well against nearby wells to identify
+                related drilling conditions, events, and trajectory
+                characteristics.
               </p>
 
             </div>
 
 
-            {/* ================= WELL SELECTOR ================= */}
+            {/* =================================================
+                WELL SELECTOR
+            ================================================= */}
 
             <div className="w-full sm:w-72">
 
               <label
                 htmlFor="investigate-well"
-                className="mb-2 block text-[9px] font-bold tracking-[0.2em] text-black/40"
+                className="mb-2 block text-[9px] font-bold tracking-[0.2em] text-black/45"
               >
-                SELECT WELL
+                SELECT REFERENCE WELL
               </label>
 
               <select
@@ -143,7 +174,7 @@ function Investigate() {
                 onChange={(event) =>
                   setSelectedWellId(event.target.value)
                 }
-                className="h-12 w-full border border-black/20 bg-white px-4 text-xs font-bold tracking-wider outline-none focus:border-[#FDB813]"
+                className="h-13 w-full cursor-pointer border border-black/10 bg-white px-4 text-sm font-bold tracking-wider shadow-[0_5px_16px_rgba(0,0,0,0.08)] outline-none transition hover:border-black/25 focus:border-[#FDB813] focus:shadow-[0_6px_18px_rgba(253,184,19,0.12)]"
               >
                 {wells.map((well) => (
                   <option key={well.id} value={well.id}>
@@ -156,16 +187,26 @@ function Investigate() {
 
           </div>
 
+        </div>
 
-          {/* ================= SELECTED WELL ================= */}
 
-          <section className="mb-8 border border-black/15">
+        {/* =======================================================
+            REFERENCE WELL
+        ======================================================= */}
 
-            <div className="flex flex-wrap items-center justify-between gap-8 px-6 py-6">
+        <section className="mb-12 overflow-hidden border border-black/10 bg-white shadow-[0_7px_22px_rgba(0,0,0,0.07)]">
+
+          <div className="flex min-h-[120px] flex-wrap items-center justify-between gap-8 px-8 py-7">
+
+            {/* WELL ID */}
+
+            <div className="flex items-center gap-4">
+
+              <span className="h-3.5 w-3.5 rounded-full bg-white ring-2 ring-[#FDB813] shadow-[0_0_10px_rgba(253,184,19,0.3)]" />
 
               <div>
 
-                <p className="text-[9px] tracking-[0.2em] text-black/40">
+                <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
                   REFERENCE WELL
                 </p>
 
@@ -175,284 +216,338 @@ function Investigate() {
 
               </div>
 
-
-              <div className="flex flex-wrap gap-10">
-
-                <div>
-                  <p className="text-[9px] tracking-widest text-black/40">
-                    DEPTH
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold">
-                    {selectedWell.depth} m
-                  </p>
-                </div>
+            </div>
 
 
-                <div>
-                  <p className="text-[9px] tracking-widest text-black/40">
-                    LANDMASS
-                  </p>
+            {/* WELL METADATA */}
 
-                  <p className="mt-1 text-sm font-bold uppercase">
-                    {selectedWell.landmass}
-                  </p>
-                </div>
+            <div className="flex flex-wrap gap-12">
+
+              <div>
+                <p className="text-[9px] font-bold tracking-widest text-black/40">
+                  DEPTH
+                </p>
+
+                <p className="mt-2 text-sm font-bold">
+                  {selectedWell.depth} m
+                </p>
+              </div>
 
 
-                <div>
-                  <p className="text-[9px] tracking-widest text-black/40">
-                    STATUS
-                  </p>
+              <div>
+                <p className="text-[9px] font-bold tracking-widest text-black/40">
+                  LANDMASS
+                </p>
 
-                  <p
-                    className={`mt-1 text-sm font-bold uppercase ${
-                      selectedWell.status === 'risk' ||
-                      selectedWell.status === 'lost'
-                        ? 'text-red-500'
-                        : 'text-[#b78600]'
-                    }`}
-                  >
-                    {selectedWell.status}
-                  </p>
-                </div>
+                <p className="mt-2 text-sm font-bold uppercase">
+                  {selectedWell.landmass}
+                </p>
+              </div>
 
+
+              <div>
+                <p className="text-[9px] font-bold tracking-widest text-black/40">
+                  STATUS
+                </p>
+
+                <p
+                  className={`mt-2 text-sm font-bold uppercase ${
+                    selectedWell.status === 'risk' ||
+                    selectedWell.status === 'lost'
+                      ? 'text-red-500'
+                      : 'text-[#b78600]'
+                  }`}
+                >
+                  {selectedWell.status}
+                </p>
               </div>
 
             </div>
 
-          </section>
+          </div>
+
+        </section>
 
 
-          {/* ================= COMPARISON ================= */}
+        {/* =======================================================
+            CROSS WELL ANALYSIS
+        ======================================================= */}
 
-          <section>
+        <section>
 
-            <div className="mb-5">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+
+            <div>
 
               <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
                 CROSS-WELL ANALYSIS
               </p>
 
-              <h2 className="mt-1 text-xl font-bold">
+              <h2 className="mt-2 text-2xl font-bold tracking-tight">
                 Related Wells
               </h2>
 
             </div>
 
+            <p className="text-[10px] font-semibold tracking-[0.15em] text-black/40">
+              {comparisons.length} COMPARISONS
+            </p>
 
-            <div className="space-y-4">
+          </div>
 
-              {comparisons.map((comparison) => {
 
-                const { well } = comparison
+          {/* =====================================================
+              COMPARISON CARDS
+          ===================================================== */}
 
-                return (
-                  <div
-                    key={well.id}
-                    className="border border-black/15 bg-white"
-                  >
+          <div className="space-y-7">
 
-                    {/* ================= WELL HEADER ================= */}
+            {comparisons.map((comparison) => {
 
-                    <div className="flex flex-wrap items-center justify-between gap-5 border-b border-black/10 px-6 py-5">
+              const { well } = comparison
 
-                      <div className="flex items-center gap-4">
+              const isRisk =
+                well.status === 'risk' ||
+                well.status === 'lost'
 
-                        <span
-                          className={`h-3 w-3 rounded-full ${
-                            well.status === 'risk' ||
-                            well.status === 'lost'
-                              ? 'bg-red-500'
-                              : 'bg-[#FDB813]'
-                          }`}
-                        />
+              return (
+                <div
+                  key={well.id}
+                  className="overflow-hidden border border-black/10 bg-white shadow-[0_6px_20px_rgba(0,0,0,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(0,0,0,0.09)]"
+                >
 
-                        <div>
+                  {/* ===========================================
+                      WELL HEADER
+                  =========================================== */}
 
-                          <p className="text-[9px] tracking-[0.2em] text-black/40">
-                            COMPARISON WELL
-                          </p>
+                  <div className="flex flex-wrap items-center justify-between gap-6 border-b border-black/10 px-8 py-6">
 
-                          <h3 className="mt-1 text-base font-bold tracking-wider">
-                            {well.id}
-                          </h3>
+                    <div className="flex items-center gap-4">
 
-                        </div>
+                      <span
+                        className={`h-3.5 w-3.5 rounded-full ${
+                          isRisk
+                            ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.35)]'
+                            : 'bg-[#FDB813] shadow-[0_0_8px_rgba(253,184,19,0.3)]'
+                        }`}
+                      />
+
+                      <div>
+
+                        <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
+                          COMPARISON WELL
+                        </p>
+
+                        <h3 className="mt-2 text-lg font-bold tracking-wider">
+                          {well.id}
+                        </h3>
 
                       </div>
 
+                    </div>
 
-                      <Link
-                        to={`/wells/${encodeURIComponent(well.id)}`}
-                        className="text-[9px] font-bold tracking-[0.15em] text-black transition hover:text-[#FDB813]"
+
+                    <Link
+                      to={`/wells/${encodeURIComponent(well.id)}`}
+                      className="border border-black/10 bg-black px-4 py-2.5 text-[9px] font-bold tracking-[0.15em] text-white shadow-[0_4px_10px_rgba(0,0,0,0.12)] transition hover:bg-[#FDB813] hover:text-black hover:shadow-[0_5px_14px_rgba(253,184,19,0.2)]"
+                    >
+                      VIEW WELL →
+                    </Link>
+
+                  </div>
+
+
+                  {/* ===========================================
+                      METRICS
+                  =========================================== */}
+
+                  <div className="grid border-b border-black/10 sm:grid-cols-2 lg:grid-cols-4">
+
+                    {/* DISTANCE */}
+
+                    <div className="min-h-[125px] border-b border-black/10 px-7 py-6 sm:border-r lg:border-b-0">
+
+                      <p className="text-[9px] font-bold tracking-widest text-black/40">
+                        DISTANCE
+                      </p>
+
+                      <p className="mt-4 text-2xl font-bold">
+                        {comparison.distance}
+                        <span className="ml-1 text-xs font-semibold text-black/40">
+                          km
+                        </span>
+                      </p>
+
+                    </div>
+
+
+                    {/* DEPTH DIFFERENCE */}
+
+                    <div className="min-h-[125px] border-b border-black/10 px-7 py-6 lg:border-b-0 lg:border-r">
+
+                      <p className="text-[9px] font-bold tracking-widest text-black/40">
+                        DEPTH DIFFERENCE
+                      </p>
+
+                      <p className="mt-4 text-2xl font-bold">
+                        {comparison.depthDifference}
+                        <span className="ml-1 text-xs font-semibold text-black/40">
+                          m
+                        </span>
+                      </p>
+
+                    </div>
+
+
+                    {/* STATUS RELATION */}
+
+                    <div className="min-h-[125px] border-b border-black/10 px-7 py-6 sm:border-r lg:border-b-0">
+
+                      <p className="text-[9px] font-bold tracking-widest text-black/40">
+                        STATUS RELATION
+                      </p>
+
+                      <p
+                        className={`mt-4 text-base font-bold uppercase ${
+                          comparison.statusMatch
+                            ? 'text-[#b78600]'
+                            : 'text-black'
+                        }`}
                       >
-                        VIEW WELL →
-                      </Link>
+                        {comparison.statusMatch
+                          ? 'MATCH'
+                          : 'DIFFERENT'}
+                      </p>
 
                     </div>
 
 
-                    {/* ================= METRICS ================= */}
+                    {/* EVENT DATA */}
 
-                    <div className="grid gap-px bg-black/10 sm:grid-cols-4">
+                    <div className="min-h-[125px] px-7 py-6">
 
-                      <div className="bg-white px-5 py-5">
+                      <p className="text-[9px] font-bold tracking-widest text-black/40">
+                        EVENT DATA
+                      </p>
 
-                        <p className="text-[9px] tracking-widest text-black/40">
-                          DISTANCE
-                        </p>
-
-                        <p className="mt-2 text-lg font-bold">
-                          {comparison.distance} km
-                        </p>
-
-                      </div>
-
-
-                      <div className="bg-white px-5 py-5">
-
-                        <p className="text-[9px] tracking-widest text-black/40">
-                          DEPTH DIFFERENCE
-                        </p>
-
-                        <p className="mt-2 text-lg font-bold">
-                          {comparison.depthDifference} m
-                        </p>
-
-                      </div>
-
-
-                      <div className="bg-white px-5 py-5">
-
-                        <p className="text-[9px] tracking-widest text-black/40">
-                          STATUS RELATION
-                        </p>
-
-                        <p className="mt-2 text-sm font-bold uppercase">
-                          {comparison.statusMatch
-                            ? 'MATCH'
-                            : 'DIFFERENT'}
-                        </p>
-
-                      </div>
-
-
-                      <div className="bg-white px-5 py-5">
-
-                        <p className="text-[9px] tracking-widest text-black/40">
-                          EVENT DATA
-                        </p>
-
-                        <p
-                          className={`mt-2 text-sm font-bold uppercase ${
-                            comparison.eventPresent
-                              ? 'text-red-500'
-                              : 'text-black/50'
-                          }`}
-                        >
-                          {comparison.eventPresent
-                            ? 'PRESENT'
-                            : 'NONE'}
-                        </p>
-
-                      </div>
+                      <p
+                        className={`mt-4 text-base font-bold uppercase ${
+                          comparison.eventPresent
+                            ? 'text-red-500'
+                            : 'text-black/45'
+                        }`}
+                      >
+                        {comparison.eventPresent
+                          ? 'PRESENT'
+                          : 'NONE'}
+                      </p>
 
                     </div>
 
-
-                    {/* ================= CORRELATION AREA ================= */}
-
-                    <div className="border-t border-black/10 px-6 py-6">
-
-                      <div className="flex flex-wrap items-start justify-between gap-6">
-
-                        <div className="max-w-2xl">
-
-                          <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
-                            CORRELATION DATA
-                          </p>
-
-                          <p className="mt-2 text-xs leading-6 text-black/55">
-                            This well is being evaluated against{' '}
-                            <span className="font-bold text-black">
-                              {selectedWell.id}
-                            </span>{' '}
-                            using the currently available well
-                            metadata. Deeper trajectory and
-                            time-series correlation will be supplied
-                            by the drilling-data / ML pipeline.
-                          </p>
-
-                        </div>
+                  </div>
 
 
-                        <div className="border border-[#FDB813] bg-[#FDB813]/10 px-4 py-3">
+                  {/* ===========================================
+                      CORRELATION DATA
+                  =========================================== */}
 
-                          <p className="text-[8px] font-bold tracking-[0.18em] text-black/50">
-                            ANALYSIS STATE
-                          </p>
+                  <div className="px-8 py-8">
 
-                          <p className="mt-1 text-xs font-bold">
-                            READY FOR ML CORRELATION
-                          </p>
+                    <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-start">
 
-                        </div>
+                      <div className="max-w-3xl">
+
+                        <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
+                          CORRELATION DATA
+                        </p>
+
+                        <h4 className="mt-2 text-lg font-bold">
+                          Cross-well relationship
+                        </h4>
+
+                        <p className="mt-3 text-sm leading-6 text-black/55">
+                          This well is being evaluated against{' '}
+                          <span className="font-bold text-black">
+                            {selectedWell.id}
+                          </span>{' '}
+                          using the currently available well metadata.
+                          Deeper trajectory and time-series correlation
+                          will be supplied by the drilling-data / ML
+                          pipeline.
+                        </p>
+
+                      </div>
+
+
+                      {/* ANALYSIS STATE */}
+
+                      <div className="shrink-0 border border-[#FDB813] bg-[#FDB813]/10 px-6 py-4 shadow-[0_4px_12px_rgba(253,184,19,0.08)]">
+
+                        <p className="text-[8px] font-bold tracking-[0.18em] text-black/50">
+                          ANALYSIS STATE
+                        </p>
+
+                        <p className="mt-2 text-xs font-bold">
+                          READY FOR ML CORRELATION
+                        </p>
 
                       </div>
 
                     </div>
 
                   </div>
-                )
-              })}
+
+                </div>
+              )
+            })}
+
+          </div>
+
+        </section>
+
+
+        {/* =======================================================
+            FUTURE DATA PIPELINE
+        ======================================================= */}
+
+        <section className="mt-12 overflow-hidden border border-dashed border-black/20 bg-white/60 shadow-[0_4px_14px_rgba(0,0,0,0.03)]">
+
+          <div className="flex flex-wrap items-center justify-between gap-8 px-8 py-8">
+
+            <div>
+
+              <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
+                FUTURE DATA PIPELINE
+              </p>
+
+              <h3 className="mt-3 text-lg font-bold">
+                eRTMAC + Historical Well Data
+              </h3>
+
+              <p className="mt-3 max-w-3xl text-xs leading-6 text-black/45">
+                The correlation engine can later consume WITSML
+                trajectory data, drilling parameters, events, and ML
+                model output without changing this interface.
+              </p>
 
             </div>
 
-          </section>
 
+            <div className="border-l border-black/10 pl-8">
 
-          {/* ================= FUTURE DATA ================= */}
+              <p className="text-[9px] font-bold tracking-widest text-black/40">
+                DATA SOURCE
+              </p>
 
-          <section className="mt-10 border border-dashed border-black/20 px-6 py-6">
-
-            <div className="flex flex-wrap items-center justify-between gap-6">
-
-              <div>
-
-                <p className="text-[9px] font-bold tracking-[0.2em] text-black/40">
-                  FUTURE DATA PIPELINE
-                </p>
-
-                <h3 className="mt-2 text-sm font-bold">
-                  eRTMAC + Historical Well Data
-                </h3>
-
-                <p className="mt-2 max-w-2xl text-xs leading-5 text-black/40">
-                  The correlation engine can later consume WITSML
-                  trajectory data, drilling parameters, events, and
-                  the ML model output without changing this interface.
-                </p>
-
-              </div>
-
-              <div className="text-right">
-
-                <p className="text-[9px] tracking-widest text-black/40">
-                  DATA SOURCE
-                </p>
-
-                <p className="mt-1 text-xs font-bold">
-                  WITSML / ML
-                </p>
-
-              </div>
+              <p className="mt-2 text-sm font-bold">
+                WITSML / ML
+              </p>
 
             </div>
 
-          </section>
+          </div>
 
-        </div>
+        </section>
 
       </section>
 

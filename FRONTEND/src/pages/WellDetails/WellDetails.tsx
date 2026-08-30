@@ -46,7 +46,7 @@ export const WellDetails: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full bg-[#FAF9F6] font-average">
+      <div className="flex h-screen w-full bg-[#f5f5f2] font-average">
         <Sidebar activeTab="Wells" />
         <div className="flex-1 flex flex-col justify-center items-center">
           <div className="w-12 h-12 border-4 border-[#FDB813] border-t-transparent rounded-full animate-spin"></div>
@@ -58,7 +58,7 @@ export const WellDetails: React.FC = () => {
 
   if (error || !wellData) {
     return (
-      <div className="flex h-screen w-full bg-[#FAF9F6] font-average">
+      <div className="flex h-screen w-full bg-[#f5f5f2] font-average">
         <Sidebar activeTab="Wells" />
         <div className="flex-1 flex flex-col justify-center items-center p-6 text-center">
           <div className="bg-amber-50 text-amber-900 p-6 rounded-xl border border-amber-200 max-w-md shadow-xs">
@@ -77,7 +77,7 @@ export const WellDetails: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#FAF9F6] text-black font-average">
+    <div className="flex min-h-screen w-full bg-[#f5f5f2] text-black font-average">
       {/* Left Navigation Sidebar (Analytics, Reports & Documents, Offset Wells, Settings) */}
       <Sidebar activeTab="Wells" />
 

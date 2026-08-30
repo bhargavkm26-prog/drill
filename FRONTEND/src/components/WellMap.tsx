@@ -32,6 +32,7 @@ function WellMap({
       <div className="relative h-full w-full">
 
         <Map
+          ClassName="h-full w-full"
           defaultCenter={activeWell.location}
           center={activeWell.location}
           defaultZoom={12}
