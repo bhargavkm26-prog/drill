@@ -8,6 +8,8 @@ from typing import List
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from database import SessionLocal, DocumentRecord
+from qdrant_client.http import models as qmodels
 
 # Enterprise Multimodal OCR Engine
 from multimodal_extractor import ProductionDocumentIntelligence
@@ -70,10 +72,9 @@ async def websocket_telemetry_endpoint(websocket: WebSocket):
 try:
     model_stuck = joblib.load("models/stuck_pipe_model.pkl")
     model_loss = joblib.load("models/mud_loss_model.pkl")
-except Exception as e:
+except Exception:
     model_stuck, model_loss = None, None
 
-# Initialize Deep-Learning Vision-Language OCR Parser
 doc_intelligence = ProductionDocumentIntelligence()
 
 QDRANT_URL = "http://localhost:6333"
@@ -91,44 +92,100 @@ os.makedirs("temp_uploads", exist_ok=True)
 telemetry_history: List[dict] = []
 
 # =========================================================
+# 3.5 AI FEATURE & CLASSIFICATION ENGINE
+# =========================================================
+def ai_feature_engine(raw_ocr_text: str) -> dict:
+    detected_entities = []
+    has_anomaly = False
+    risk_score = 1
+    text_lower = raw_ocr_text.lower()
+
+    if "torque spike" in text_lower or "stuck" in text_lower or "losses" in text_lower:
+        has_anomaly = True
+        risk_score = 8
+        if "torque spike" in text_lower:
+            detected_entities.append("Mechanical Torque Spike")
+        if "stuck" in text_lower:
+            detected_entities.append("Stuck Pipe Indicator")
+        if "losses" in text_lower:
+            detected_entities.append("Mud Loss")
+
+    return {
+        "data_category": "Incident Observation" if has_anomaly else "Routine Daily Log",
+        "risk_score": risk_score,
+        "detected_entities": detected_entities,
+        "has_anomaly": has_anomaly
+    }
+
+# =========================================================
 # 4. BACKGROUND WORKER: ENTERPRISE MULTIMODAL INGESTION
 # =========================================================
 def process_bulk_directory_background(directory_path: str, source_name: str):
-    print(f"[*] Enterprise Multimodal Worker Crawling: {directory_path} ({source_name})")
+    db = SessionLocal()
     try:
         points = []
-        # Recursively walk through directory to find document images/scans
         for root, _, files in os.walk(directory_path):
             for file in files:
+                file_path = os.path.join(root, file)
+                raw_text = ""
+                
+                # 1. Neural OCR for Images / PDFs
                 if file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.pdf')):
-                    file_path = os.path.join(root, file)
-                    
-                    # Extract semantic text layout-agnostically using Deep Learning VLM
                     raw_text = doc_intelligence.extract_text_from_document(file_path)
-                    
-                    if not raw_text.strip():
-                        continue
 
-                    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-                    chunks = text_splitter.split_text(raw_text)
-                    
-                    for chunk in chunks:
-                        vector = embeddings_model.embed_query(chunk)
-                        points.append(
-                            PointStruct(
-                                id=str(uuid.uuid4()), 
-                                vector=vector, 
-                                payload={"page_content": chunk, "source": file}
-                            )
-                        )
+                    print(f"\n====== OCR EXTRACTION SUCCESS ======")
+                    print(raw_text[:500] + "...\n====================================\n")
+                
+                # 2. Spreadsheets & CSVs
+                elif file.lower().endswith(('.csv', '.xlsx', '.xls')):
+                    try:
+                        df = pd.read_csv(file_path) if file.lower().endswith('.csv') else pd.read_excel(file_path)
+                        df.dropna(how='all', inplace=True)
+                        raw_text = df.fillna("").to_csv(index=False, sep="|")
+                    except Exception as e:
+                        print(f"[-] Spreadsheet read error on {file}: {e}")
+                        continue
+                else:
+                    continue
+
+                if not raw_text.strip():
+                    continue
+
+                # 3. Dynamic Classification
+                ai_meta = ai_feature_engine(raw_text)
+
+                # 4. Save to PostgreSQL Master Table
+                doc_record = DocumentRecord(
+                    original_file_name=file,
+                    raw_extracted_text=raw_text,
+                    ai_metadata=ai_meta
+                )
+                db.add(doc_record)
+                db.commit()
+                db.refresh(doc_record)
+                
+                # 5. Semantic Chunking
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+                chunks = text_splitter.split_text(raw_text)
+                
+                # 6. Index into Qdrant with PostgreSQL Reference Key
+                for chunk in chunks:
+                    vector = embeddings_model.embed_query(chunk)
+                    payload_data = {
+                        "postgres_doc_id": doc_record.id,
+                        "page_content": chunk,
+                        "source": file,
+                        "ai_metadata": ai_meta
+                    }
+                    points.append(
+                        PointStruct(id=str(uuid.uuid4()), vector=vector, payload=payload_data)
+                    )
         
         if points:
             qdrant_client.upsert(collection_name=COLLECTION_NAME, points=points)
-            print(f"[+] Successfully indexed {len(points)} multimodal vectors from {source_name}.")
             
-    except Exception as e:
-        print(f"[-] Enterprise Ingestion Error ({source_name}): {e}")
     finally:
+        db.close()
         if os.path.exists(directory_path):
             shutil.rmtree(directory_path)
 
@@ -215,7 +272,6 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
     if prob_loss > 70: active_warnings.append("Severe Mud Loss")
 
     status_flag = "CRITICAL" if is_critical else "NORMAL"
-
     mitigation_strategy = "Continue standard operational parameters."
     source_document = "N/A"
     
@@ -223,7 +279,6 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
         query = f"Mitigation and standard operating procedure for {active_warnings[0]}"
         query_vector = embeddings_model.embed_query(query)
         
-        # Updated to the new Qdrant query_points API
         search_response = qdrant_client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
@@ -233,6 +288,7 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
         if search_response.points:
             mitigation_strategy = search_response.points[0].payload.get("page_content", "No mitigation record.")
             source_document = search_response.points[0].payload.get("source", "Historical Log")
+
     response_payload = {
         "status": "success",
         "severity": status_flag,
@@ -263,3 +319,106 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
 @app.get("/telemetry/history")
 async def get_telemetry_history():
     return telemetry_history
+
+# =========================================================
+# 6. DOCUMENT MANAGEMENT & AUDITABLE EDITING
+# =========================================================
+class DocumentUpdate(BaseModel):
+    new_raw_text: str
+    updated_by: str = "Engineer"
+
+@app.get("/documents/{doc_id}")
+async def get_document(doc_id: str):
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return {
+            "id": doc.id,
+            "filename": doc.original_file_name,
+            "raw_text": doc.raw_extracted_text,
+            "ai_metadata": doc.ai_metadata,
+            "last_updated_by": doc.last_updated_by,
+            "last_updated_at": doc.last_updated_at
+        }
+    finally:
+        db.close()
+
+@app.put("/documents/{doc_id}")
+async def update_and_sync_document(doc_id: str, payload: DocumentUpdate):
+    db = SessionLocal()
+    try:
+        doc = db.query(DocumentRecord).filter(DocumentRecord.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found in database")
+            
+        doc.raw_extracted_text = payload.new_raw_text
+        doc.last_updated_by = payload.updated_by
+        doc.ai_metadata = ai_feature_engine(payload.new_raw_text)
+        
+        db.commit()
+        db.refresh(doc)
+
+        qdrant_client.delete(
+            collection_name=COLLECTION_NAME,
+            points_selector=qmodels.Filter(
+                must=[
+                    qmodels.FieldCondition(
+                        key="postgres_doc_id",
+                        match=qmodels.MatchValue(value=doc_id)
+                    )
+                ]
+            )
+        )
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+        chunks = text_splitter.split_text(payload.new_raw_text)
+        
+        new_points = []
+        for chunk in chunks:
+            vector = embeddings_model.embed_query(chunk)
+            new_points.append(
+                PointStruct(
+                    id=str(uuid.uuid4()), 
+                    vector=vector, 
+                    payload={
+                        "postgres_doc_id": doc.id,
+                        "page_content": chunk,
+                        "source": doc.original_file_name,
+                        "ai_metadata": doc.ai_metadata
+                    }
+                )
+            )
+            
+        if new_points:
+            qdrant_client.upsert(collection_name=COLLECTION_NAME, points=new_points)
+
+        return {
+            "status": "success",
+            "message": f"Document '{doc.original_file_name}' updated in PostgreSQL and re-indexed in Qdrant.",
+            "doc_id": doc.id
+        }
+    
+    finally:
+        db.close()
+
+
+@app.get("/documents")
+async def list_recent_documents():
+    db = SessionLocal()
+    try:
+        # Fetch the 10 most recently processed documents
+        docs = db.query(DocumentRecord).order_by(DocumentRecord.last_updated_at.desc()).limit(10).all()
+        return [
+            {
+                "id": doc.id,
+                "filename": doc.original_file_name,
+                "raw_text": doc.raw_extracted_text,
+                "ai_metadata": doc.ai_metadata,
+                "last_updated_at": doc.last_updated_at
+            } 
+            for doc in docs
+        ]
+    finally:
+        db.close()    

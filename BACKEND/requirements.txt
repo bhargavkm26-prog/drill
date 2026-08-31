@@ -1,18 +1,42 @@
+# ── Core Framework ────────────────────────────
 fastapi
-uvicorn
+uvicorn[standard]
 pydantic
+
+# ── Database ──────────────────────────────────
+sqlalchemy
+psycopg2-binary
+geoalchemy2
+alembic
+
+# ── Authentication ────────────────────────────
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+
+# ── ML & AI ───────────────────────────────────
 pandas
 numpy
 lightgbm
 joblib
 scikit-learn
-requests
+shap
+
+# ── OCR & Document Processing ─────────────────
+easyocr
+pymupdf
+pillow
+opencv-python
+torch
+torchvision
+
+# ── RAG & Embeddings ──────────────────────────
 qdrant-client
 sentence-transformers
 langchain
+langchain-text-splitters
+langchain-community
+
+# ── Utilities ─────────────────────────────────
+requests
 python-multipart
-surya-ocr
-torch
-torchvision
-pillow
-opencv-python
