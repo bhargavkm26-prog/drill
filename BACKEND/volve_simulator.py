@@ -1,19 +1,17 @@
 import os
 import time
-import requests
-import pandas as pd
+import logging
+
 import numpy as np
-from datetime import datetime
-
-
-print("[*] Initializing Production eRTMAC Telemetry Stream Client...")
+import pandas as pd
+import requests
 
 
 # ==========================================
 # CONFIGURATION
 # ==========================================
 
-file_name = "OIL_DEMO_DATASET.csv"
+FILE_NAME = "OIL_DEMO_DATASET.csv"
 
 API_BASE_URL = "http://127.0.0.1:8000"
 TOKEN_URL = f"{API_BASE_URL}/api/v1/auth/token"
@@ -24,21 +22,49 @@ SIM_PASSWORD = os.getenv("SIM_PASSWORD")
 
 POLLING_RATE = 1.0
 
-# Start from the first region containing
-# meaningful drilling telemetry.
+# Start from the region containing meaningful
+# drilling telemetry.
 START_INDEX = 2405
 
-# ==========================================
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+logger = logging.getLogger("VolveSimulator")
 
 
 # ==========================================
-# AUTHENTICATION
+# VALIDATE CREDENTIALS
 # ==========================================
 
 if not SIM_USERNAME or not SIM_PASSWORD:
-    print("[-] SIM_USERNAME or SIM_PASSWORD is not set.")
-    exit()
+    raise RuntimeError(
+        "SIM_USERNAME and SIM_PASSWORD environment variables "
+        "must be set."
+    )
 
+
+# ==========================================
+# LOAD OIL DEMO DATASET
+# ==========================================
+
+print(f"[*] Loading dataset: {FILE_NAME}")
+
+df_volve = pd.read_csv(FILE_NAME)
+
+print(
+    f"[*] Dataset loaded: "
+    f"{len(df_volve)} rows"
+)
+
+
+# ==========================================
+# AUTHENTICATE WITH BACKEND
+# ==========================================
+
+print("[*] Authenticating with backend...")
 
 try:
     token_response = requests.post(
@@ -52,18 +78,18 @@ try:
 
     token_response.raise_for_status()
 
-    token_data = token_response.json()
-    access_token = token_data["access_token"]
+    access_token = token_response.json()["access_token"]
 
-    print("[+] Authentication successful.")
+except requests.RequestException as exc:
+    raise RuntimeError(
+        f"Authentication failed: {exc}"
+    ) from exc
 
-except requests.exceptions.RequestException as e:
-    print(f"[-] Authentication failed: {e}")
-    exit()
-
-except (KeyError, ValueError) as e:
-    print(f"[-] Invalid authentication response: {e}")
-    exit()
+except KeyError:
+    raise RuntimeError(
+        "Authentication succeeded but no access token "
+        "was returned."
+    )
 
 
 HEADERS = {
@@ -71,105 +97,85 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-
-# ==========================================
-# LOAD OIL DEMO DATASET
-# ==========================================
-
-try:
-    df_volve = pd.read_csv(
-        file_name,
-        low_memory=False
-    )
-
-except FileNotFoundError:
-    print(f"[-] Error: '{file_name}' not found.")
-    exit()
-
-except Exception as e:
-    print(f"[-] Error loading dataset: {e}")
-    exit()
-
-
-print(
-    f"[*] Loaded OIL demo dataset: "
-    f"{len(df_volve)} rows"
-)
-
-
-# ==========================================
-# SELECT TELEMETRY REGION
-# ==========================================
-
-if START_INDEX >= len(df_volve):
-    print(
-        f"[-] START_INDEX {START_INDEX} "
-        f"is outside the dataset."
-    )
-    exit()
-
-
-df_volve = df_volve.iloc[START_INDEX:].copy()
-
-print(
-    f"[*] Starting telemetry stream "
-    f"from dataset index {START_INDEX}..."
-)
+print("[+] Authentication successful.")
 
 
 # ==========================================
 # MAP OIL DEMO TELEMETRY → ML FEATURES
 # ==========================================
 
-mapped_df = pd.DataFrame(index=df_volve.index)
+mapped_df = pd.DataFrame(
+    index=df_volve.index
+)
 
 
 mapped_df["Depth"] = df_volve[
     "Measured Depth m"
 ]
 
+
 mapped_df["WOB_mean"] = df_volve[
     "Averaged WOB kkgf"
 ]
+
 
 mapped_df["RPM_mean"] = df_volve[
     "Averaged RPM rpm"
 ]
 
+
 mapped_df["ROP_mean_5min"] = df_volve[
     "Rate of Penetration (5ft avg) m/h"
 ]
+
 
 mapped_df["Torque_mean_5min"] = df_volve[
     "Average Surface Torque kN.m"
 ]
 
+
 mapped_df["SPP_mean"] = df_volve[
     "Average Standpipe Pressure kPa"
 ]
+
 
 mapped_df["MudWeight"] = df_volve[
     "Mud Density In g/cm3"
 ]
 
+
 # OIL demo dataset does not contain a direct ECD
 # measurement in the selected telemetry schema.
 mapped_df["ECD"] = 10.2
 
-# Historical/context features are not available
-# directly from the simulator telemetry.
-mapped_df["HistoricalLossCount"] = 0
-mapped_df["HistoricalStuckPipeCount"] = 0
-mapped_df["FormationRiskScore"] = 0.5
-mapped_df["DistanceToNearestRiskWell"] = 1500.0
+
+# ==========================================
+# GEO CONTEXT
+# ==========================================
+
+# The simulator provides the drilling location.
+# The backend uses these coordinates to query
+# PostGIS and calculate:
+#
+#   HistoricalLossCount
+#   HistoricalStuckPipeCount
+#   FormationRiskScore
+#   DistanceToNearestRiskWell
+#
+# Using existing seeded well NHK-18.
+mapped_df["Latitude"] = 27.2900
+mapped_df["Longitude"] = 95.3350
+
 
 mapped_df["FlowRate"] = df_volve[
     "Mud Flow In L/min"
 ]
 
+
 mapped_df["Inclination"] = df_volve[
     "MWD Continuous Inclination dega"
 ]
+
 
 mapped_df["Azimuth"] = df_volve[
     "MWD Continuous Azimuth dega"
@@ -181,6 +187,7 @@ mapped_df["Azimuth"] = df_volve[
 # ==========================================
 
 CORE_TELEMETRY = [
+    "Depth",
     "WOB_mean",
     "RPM_mean",
     "ROP_mean_5min",
@@ -210,14 +217,11 @@ mapped_df = mapped_df.replace(
 # ==========================================
 # SYNCHRONIZE SPARSE TELEMETRY
 # ==========================================
-#
-# The OIL demo telemetry sensors do not all
-# report values on the exact same row.
-#
-# Interpolate between real sensor observations
-# so the simulator can produce a continuous
-# synchronized telemetry stream.
-#
+
+# Several telemetry channels in the OIL demo
+# dataset are sparse. Interpolate them so that
+# the simulator can produce a synchronized
+# telemetry stream.
 
 mapped_df[CORE_TELEMETRY] = (
     mapped_df[CORE_TELEMETRY]
@@ -230,6 +234,7 @@ mapped_df[CORE_TELEMETRY] = (
 
 # Remove rows where the essential drilling
 # telemetry is still unavailable.
+
 mapped_df = mapped_df.dropna(
     subset=[
         "Depth",
@@ -242,6 +247,15 @@ mapped_df = mapped_df.dropna(
 
 
 # ==========================================
+# START FROM VALID TELEMETRY REGION
+# ==========================================
+
+mapped_df = mapped_df.loc[
+    mapped_df.index >= START_INDEX
+]
+
+
+# ==========================================
 # CALCULATE LIVE TRENDS
 # ==========================================
 
@@ -251,11 +265,13 @@ mapped_df["Torque_trend"] = (
     .fillna(0)
 )
 
+
 mapped_df["SPP_trend"] = (
     mapped_df["SPP_mean"]
     .diff()
     .fillna(0)
 )
+
 
 mapped_df["ROP_trend"] = (
     mapped_df["ROP_mean_5min"]
@@ -268,6 +284,13 @@ mapped_df["ROP_trend"] = (
 # FINAL CLEANUP
 # ==========================================
 
+# These are only the features supplied by the
+# simulator itself.
+#
+# Historical/geospatial ML features are NOT
+# included here because the backend calculates
+# them from PostGIS using Latitude/Longitude.
+
 FEATURES = [
     "Depth",
     "ROP_mean_5min",
@@ -277,13 +300,9 @@ FEATURES = [
     "SPP_mean",
     "MudWeight",
     "ECD",
-    "HistoricalLossCount",
-    "HistoricalStuckPipeCount",
-    "FormationRiskScore",
     "FlowRate",
     "Inclination",
     "Azimuth",
-    "DistanceToNearestRiskWell",
     "Torque_trend",
     "SPP_trend",
     "ROP_trend"
@@ -314,6 +333,7 @@ print(
     f"telemetry frames."
 )
 
+
 print(
     f"[*] Broadcasting telemetry stream "
     f"to {API_URL}..."
@@ -326,11 +346,7 @@ print(
 
 try:
 
-    for i, row in enumerate(records):
-
-        row["live_timestamp"] = (
-            datetime.now().isoformat()
-        )
+    for row in records:
 
         try:
 
@@ -345,53 +361,29 @@ try:
 
                 data = res.json()
 
-                metrics = data.get(
-                    "metrics",
-                    {}
-                )
-
-                warnings = " | ".join(
-                    data.get(
-                        "active_warnings",
-                        []
-                    )
-                )
-
                 print(
-                    f"[Frame {i}] "
-                    f"Depth: "
-                    f"{metrics.get('depth_m', row['Depth']):.2f}m | "
-                    f"Torque: "
-                    f"{metrics.get('torque_kNm', row['Torque_mean_5min']):.2f} | "
-                    f"ROP: "
-                    f"{row['ROP_mean_5min']:.2f} | "
-                    f"WOB: "
-                    f"{row['WOB_mean']:.2f} | "
-                    f"Status: "
-                    f"[{data.get('severity', 'UNKNOWN')}] "
-                    f"-> {warnings}"
+                    f"[+] Depth={row['Depth']:.2f} m | "
+                    f"Torque={row['Torque_mean_5min']:.2f} | "
+                    f"ROP={row['ROP_mean_5min']:.2f} | "
+                    f"WOB={row['WOB_mean']:.2f} | "
+                    f"Stuck={data.get('stuck_pipe_risk_percent', 0):.2f}% | "
+                    f"Loss={data.get('mud_loss_risk_percent', 0):.2f}% | "
+                    f"Severity={data.get('severity', 'UNKNOWN')}"
                 )
 
             else:
 
                 print(
-                    f"[-] API Error: "
-                    f"{res.status_code} "
-                    f"{res.text[:200]}"
+                    f"[!] Prediction failed: "
+                    f"HTTP {res.status_code}"
                 )
 
-        except requests.exceptions.Timeout:
+                print(res.text)
+
+        except requests.RequestException as exc:
 
             print(
-                f"[-] Prediction API request "
-                f"timed out at frame {i}."
-            )
-
-        except requests.exceptions.RequestException as e:
-
-            print(
-                f"[-] Prediction API error "
-                f"at frame {i}: {e}"
+                f"[!] Request error: {exc}"
             )
 
         time.sleep(POLLING_RATE)
@@ -400,13 +392,8 @@ try:
 except KeyboardInterrupt:
 
     print(
-        "\n[*] Telemetry broadcast "
-        "stopped by operator."
+        "\n[*] Simulator stopped by user."
     )
 
 
-except Exception as e:
-
-    print(
-        f"\n[-] Unexpected simulator error: {e}"
-    )
+print("[+] Telemetry simulation complete.")

@@ -1,9 +1,15 @@
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.schemas import RigTelemetry, PredictionResponse, ShapExplanation
 from app.auth import require_role
+from app.database import get_db
 from app.services.ml_service import ml_service
 from app.services.rag_service import rag_service
+from app.services.geo_service import get_geo_context
+
 
 logger = logging.getLogger("NWIS.Predictions")
 
@@ -19,7 +25,8 @@ router = APIRouter(
 @router.post("/predict", response_model=PredictionResponse)
 async def predict_drilling_risk(
     telemetry: RigTelemetry,
-    user: dict = Depends(require_role(["Admin", "Engineer"]))
+    user: dict = Depends(require_role(["Admin", "Engineer"])),
+    db: Session = Depends(get_db),
 ):
     """
     Enterprise drilling risk prediction engine.
@@ -28,6 +35,7 @@ async def predict_drilling_risk(
     - LightGBM ML model probabilities (stuck pipe + mud loss)
     - Physics-based constraint checks (torque, ECD, ROP, flow rate)
     - SHAP explainability (why the AI flagged this reading)
+    - PostGIS geo/historical risk context
     - RAG-powered mitigation SOP retrieval (when critical)
 
     This is the core B2B intelligence endpoint.
@@ -51,7 +59,38 @@ async def predict_drilling_risk(
             alert=False,
         )
 
+    # ─────────────────────────────────────────────────────────
+    # Enrich telemetry with PostGIS geo/historical context
+    # ─────────────────────────────────────────────────────────
+    if (
+        telemetry.Latitude is not None
+        and telemetry.Longitude is not None
+    ):
+        geo_context = get_geo_context(
+            db,
+            telemetry.Latitude,
+            telemetry.Longitude,
+        )
+
+        telemetry.HistoricalLossCount = (
+            geo_context["HistoricalLossCount"]
+        )
+
+        telemetry.HistoricalStuckPipeCount = (
+            geo_context["HistoricalStuckPipeCount"]
+        )
+
+        telemetry.FormationRiskScore = (
+            geo_context["FormationRiskScore"]
+        )
+
+        telemetry.DistanceToNearestRiskWell = (
+            geo_context["DistanceToNearestRiskWell"]
+        )
+
+    # ─────────────────────────────────────────────────────────
     # Run ML + physics + SHAP pipeline
+    # ─────────────────────────────────────────────────────────
     prediction = ml_service.predict(telemetry.dict())
 
     # ─────────────────────────────────────────────────────────

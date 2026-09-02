@@ -149,6 +149,10 @@ class RigTelemetry(BaseModel):
     SPP_trend: float = 0.0
     ROP_trend: float = 0.0
 
+    # Geo context
+    Latitude: Optional[float] = None
+    Longitude: Optional[float] = None
+
 
 class ShapExplanation(BaseModel):
     feature: str
