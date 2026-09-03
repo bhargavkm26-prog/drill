@@ -1,0 +1,10 @@
+BACKEND/venv/
+BACKEND/__pycache__/
+BACKEND/temp_uploads/
+.git/
+FRONTEND/node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.env

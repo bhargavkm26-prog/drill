@@ -3,9 +3,10 @@
 .auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
   color: #000;
   font-family: 'Poppins', Arial, sans-serif;
   background:
@@ -28,25 +29,24 @@
 .auth-container {
   position: relative;
   width: 100%;
-  max-width: 430px;
+  max-width: 410px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
 }
 
 .auth-container .forms {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 200%;
-  height: 440px;
   transition: height 0.2s ease;
 }
 
 .auth-container .form {
   width: 50%;
-  padding: 32px;
+  padding: 26px 28px;
   background-color: #fff;
   transition: margin-left 0.18s ease;
 }
@@ -69,14 +69,10 @@
   transition: opacity 0.2s ease;
 }
 
-.auth-container.active .forms {
-  height: 600px;
-}
-
 .form .title {
   position: relative;
   color: #000;
-  font-size: 27px;
+  font-size: 22px;
   font-weight: 600;
 }
 
@@ -85,8 +81,8 @@
   position: absolute;
   left: 0;
   bottom: -2px;
-  width: 32px;
-  height: 4px;
+  width: 28px;
+  height: 3.5px;
   border-radius: 999px;
   background-color: #fdb813;
 }
@@ -95,22 +91,22 @@
   position: relative;
   display: block;
   width: 100%;
-  height: 50px;
-  margin-top: 30px;
+  height: 44px;
+  margin-top: 18px;
 }
 
 .input-field input {
   position: absolute;
   width: 100%;
   height: 100%;
-  padding: 0 42px 0 35px;
+  padding: 0 38px 0 32px;
   border: 0;
   border-top: 2px solid transparent;
   border-bottom: 2px solid #d6d6d6;
   outline: 0;
   color: #000;
   background: #fff;
-  font-size: 16px;
+  font-size: 14.5px;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease;
@@ -129,7 +125,7 @@
   position: absolute;
   top: 50%;
   color: #5d5d5d;
-  font-size: 23px;
+  font-size: 20px;
   transform: translateY(-50%);
   transition: color 0.2s ease;
 }
@@ -147,8 +143,8 @@
   position: absolute;
   top: 50%;
   right: 0;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border: 0;
   color: #000;
   background: transparent;
@@ -162,15 +158,15 @@
 }
 
 .input-field .showHidePw i {
-  right: 8px;
+  right: 6px;
 }
 
 .form .checkbox-text {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .checkbox-text .checkbox-content {
@@ -180,13 +176,13 @@
 
 .checkbox-content input {
   flex: 0 0 auto;
-  margin-right: 10px;
+  margin-right: 8px;
   accent-color: #fdb813;
 }
 
 .form .text {
   color: #000;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -195,7 +191,7 @@
   font-weight: 600;
   text-decoration-color: #fdb813;
   text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
+  text-underline-offset: 3px;
 }
 
 .form a:hover {
@@ -203,7 +199,7 @@
 }
 
 .form .button {
-  margin-top: 35px;
+  margin-top: 22px;
 }
 
 .form .button input {
@@ -211,7 +207,7 @@
   border-radius: 6px;
   color: #000;
   background-color: #fdb813;
-  font-size: 17px;
+  font-size: 15.5px;
   font-weight: 600;
   letter-spacing: 0;
   cursor: pointer;
@@ -226,26 +222,22 @@
 }
 
 .form .login-signup {
-  margin-top: 30px;
+  margin-top: 18px;
   text-align: center;
 }
 
 @media (max-width: 520px) {
   .auth-page {
     align-items: flex-start;
-    padding: 16px;
+    padding: 14px;
   }
 
   .auth-container .form {
-    padding: 28px 22px;
+    padding: 22px 18px;
   }
 
   .form .checkbox-text {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .auth-container.active .forms {
-    height: 640px;
   }
 }

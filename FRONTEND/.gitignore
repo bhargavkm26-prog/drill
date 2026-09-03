@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+=======
+# Environment Variables & Secrets
+.env
+.env.*
+*.env
+*.local
+
+>>>>>>> backend-complete
 # Logs
 logs
 *.log
@@ -7,10 +16,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+<<<<<<< HEAD
 node_modules
 dist
 dist-ssr
 *.local
+=======
+# Dependencies & Build
+node_modules
+dist
+dist-ssr
+>>>>>>> backend-complete
 
 # Editor directories and files
 .vscode/*

@@ -1,4 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Average+Sans&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+:root {
+  --color-primary-bg: #F4F6F9;
+  --color-card-bg: #FFFFFF;
+  --color-text-main: #1A1A1A;
+  --color-text-muted: #6B7280;
+  --color-brand-yellow: #FDB813;
+  --color-brand-yellow-light: #FFF8E6;
+  --color-border: #E5E7EB;
+  --color-oil-red: #D92D20;
+}
 
 * {
   box-sizing: border-box;
@@ -8,10 +20,58 @@ html,
 body,
 #root {
   margin: 0;
-  min-height: 100%;
+  padding: 0;
+  min-height: 100vh;
   width: 100%;
+  background-color: var(--color-primary-bg);
+  color: var(--color-text-main);
+  font-family: 'Average Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  font-family: Arial, sans-serif;
+/* Custom font scaling tokens matching prompt requirements */
+.font-average {
+  font-family: 'Average Sans', 'Inter', sans-serif;
+}
+
+.text-custom-small {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.text-custom-medium {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+.text-custom-large {
+  font-size: 36px;
+  line-height: 44px;
+  font-weight: 800;
+}
+
+.text-custom-max {
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 800;
+}
+
+/* Smooth custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }

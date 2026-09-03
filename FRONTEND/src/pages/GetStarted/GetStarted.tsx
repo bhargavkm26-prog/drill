@@ -1,7 +1,9 @@
 import React, { useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import "./GetStarted.css"
 
 const GetStarted: React.FC = () => {
+  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -331,7 +333,7 @@ const GetStarted: React.FC = () => {
             About Us
           </a>
 
-          <button className="nav-btn btn-login">
+          <button onClick={() => navigate('/login')} className="nav-btn btn-login cursor-pointer">
             Login
           </button>
         </div>
@@ -373,7 +375,7 @@ const GetStarted: React.FC = () => {
             offset well analysis.
           </p>
 
-          <button className="btn-get-started">
+          <button onClick={() => navigate('/login')} className="btn-get-started cursor-pointer">
             Get Started
             <span className="arrow">&rarr;</span>
           </button>
