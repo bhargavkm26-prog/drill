@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -9,20 +9,19 @@ from app.database import get_db
 from app.models import UserRecord
 
 # ── Password Hashing Engine ──────────────────────────────────
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 # ── OAuth2 Token Extractor ───────────────────────────────────
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 def hash_password(plain_password: str) -> str:
-    """Hash a plaintext password using bcrypt."""
-    return pwd_context.hash(plain_password)
+    return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a bcrypt hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+
 
 
 def create_access_token(data: dict, role: str) -> str:

@@ -8,7 +8,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     libgomp1 \
     libpq-dev \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
 # Copy the rest of the backend code
 COPY . .

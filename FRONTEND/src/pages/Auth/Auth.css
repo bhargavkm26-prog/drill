@@ -1,0 +1,243 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #000;
+  font-family: 'Poppins', Arial, sans-serif;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 31px,
+      rgba(253, 184, 19, 0.16) 32px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 31px,
+      rgba(0, 0, 0, 0.06) 32px
+    ),
+    #fff;
+}
+
+.auth-container {
+  position: relative;
+  width: 100%;
+  max-width: 410px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+}
+
+.auth-container .forms {
+  display: flex;
+  align-items: flex-start;
+  width: 200%;
+  transition: height 0.2s ease;
+}
+
+.auth-container .form {
+  width: 50%;
+  padding: 26px 28px;
+  background-color: #fff;
+  transition: margin-left 0.18s ease;
+}
+
+.auth-container.active .login {
+  margin-left: -50%;
+  opacity: 0;
+  transition:
+    margin-left 0.18s ease,
+    opacity 0.15s ease;
+}
+
+.auth-container .signup {
+  opacity: 0;
+  transition: opacity 0.09s ease;
+}
+
+.auth-container.active .signup {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.form .title {
+  position: relative;
+  color: #000;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.form .title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 28px;
+  height: 3.5px;
+  border-radius: 999px;
+  background-color: #fdb813;
+}
+
+.form .input-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 18px;
+}
+
+.input-field input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 0 38px 0 32px;
+  border: 0;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid #d6d6d6;
+  outline: 0;
+  color: #000;
+  background: #fff;
+  font-size: 14.5px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.input-field input::placeholder {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.input-field input:is(:focus, :valid) {
+  border-bottom-color: #fdb813;
+  background-color: #fffdf6;
+}
+
+.input-field i {
+  position: absolute;
+  top: 50%;
+  color: #5d5d5d;
+  font-size: 20px;
+  transform: translateY(-50%);
+  transition: color 0.2s ease;
+}
+
+.input-field input:is(:focus, :valid) ~ i,
+.input-field input:is(:focus, :valid) ~ .showHidePw i {
+  color: #000;
+}
+
+.input-field i.icon {
+  left: 0;
+}
+
+.input-field .showHidePw {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  color: #000;
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.input-field .showHidePw:focus-visible {
+  outline: 2px solid #fdb813;
+  outline-offset: 2px;
+}
+
+.input-field .showHidePw i {
+  right: 6px;
+}
+
+.form .checkbox-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.checkbox-text .checkbox-content {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-content input {
+  flex: 0 0 auto;
+  margin-right: 8px;
+  accent-color: #fdb813;
+}
+
+.form .text {
+  color: #000;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.form a.text {
+  color: #000;
+  font-weight: 600;
+  text-decoration-color: #fdb813;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.form a:hover {
+  color: #8a5f00;
+}
+
+.form .button {
+  margin-top: 22px;
+}
+
+.form .button input {
+  border: 0;
+  border-radius: 6px;
+  color: #000;
+  background-color: #fdb813;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
+}
+
+.form .button input:hover {
+  background-color: #e5a100;
+  transform: translateY(-1px);
+}
+
+.form .login-signup {
+  margin-top: 18px;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .auth-container .form {
+    padding: 22px 18px;
+  }
+
+  .form .checkbox-text {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
