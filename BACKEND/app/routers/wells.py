@@ -464,7 +464,8 @@ async def find_nearby_wells(
             func.ST_GeogFromText(
                 f"POINT({lon} {lat})"
             )
-        ).label("distance_m")
+        ).label("distance_m"),
+        func.ST_AsText(WellRecord.location).label("location_wkt")
     ).filter(
         ST_DWithin(
             WellRecord.location,
@@ -475,7 +476,9 @@ async def find_nearby_wells(
 
     results = []
 
-    for well, distance_m in nearby_query:
+    for well, distance_m, location_wkt in nearby_query:
+
+        well_lat, well_lon = _parse_point_wkt(location_wkt)
 
         distance_km = round(
             float(distance_m) / 1000,
@@ -506,6 +509,8 @@ async def find_nearby_wells(
         results.append(
             NearbyWellResult(
                 well_name=well.well_name,
+                latitude=well_lat,
+                longitude=well_lon,
                 distance_km=distance_km,
                 target_depth_m=well.target_depth_m or 0,
                 basin=well.basin or "Unknown",

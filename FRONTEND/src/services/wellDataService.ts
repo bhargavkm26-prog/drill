@@ -347,34 +347,65 @@ export async function getWellDetails(wellId: string): Promise<WellFullDetails> {
   try {
     const data = await wellDataService.getWellDetail(wellId);
     
-    // Attempt to fetch related data concurrently, fallback to empty arrays on failure
     const [incidents, documents] = await Promise.all([
       incidentService.listIncidents(wellId).catch(() => []),
-      documentService.listDocuments(wellId).catch(() => []),
-      telemetryService.getTelemetryHistory(wellId).catch(() => []) // Fetched but not assigned to avoid TS error until mapped
+      documentService.listDocuments(wellId).catch(() => [])
     ]);
 
+    // Map backend formations to the UI format
+    const topFormation = (data.formations && data.formations.length > 0) 
+      ? data.formations[0] 
+      : { formation_name: 'Unknown', lithology: 'Unknown', age: 'Unknown' };
+
+    const mappedFormationTops = (data.formations || []).map((f: any) => ({
+      name: f.formation_name,
+      depth: `${f.top_depth_m} m`,
+      isPayZone: false
+    }));
+
+    const mappedOffsetEvents = (data.incidents || []).map((inc: any) => ({
+      id: inc.id,
+      wellId: data.well_name,
+      distanceKm: 0,
+      events: inc.mitigation_sop || inc.incident_type,
+      formation: inc.formation_name || 'Unknown',
+      measuredDepth: inc.depth_m,
+      trueVerticalDepth: inc.depth_m,
+      eventType: inc.incident_type,
+      severity: inc.severity,
+      date: new Date().toLocaleDateString(),
+    }));
+
     return { 
-      ...defaultWellDetailsData, 
-      ...data,
       header: { 
-        ...defaultWellDetailsData.header, 
+        ...defaultWellDetailsData.header,
         wellId: data.well_name || wellId,
         status: data.status || defaultWellDetailsData.header.status,
+        measuredDepth: data.target_depth_m ? `${data.target_depth_m} m` : defaultWellDetailsData.header.measuredDepth,
         trueVerticalDepth: data.target_depth_m ? `${data.target_depth_m} m` : defaultWellDetailsData.header.trueVerticalDepth,
-        location: data.basin ? `${data.basin} Basin` : defaultWellDetailsData.header.location
+        location: data.basin ? `${data.basin} Basin` : defaultWellDetailsData.header.location,
       },
+      formationRisk: {
+        ...defaultWellDetailsData.formationRisk,
+        formation: { 
+          name: topFormation.formation_name !== 'Unknown' ? topFormation.formation_name : defaultWellDetailsData.formationRisk.formation.name, 
+          lithology: topFormation.lithology !== 'Unknown' ? topFormation.lithology : defaultWellDetailsData.formationRisk.formation.lithology, 
+          age: defaultWellDetailsData.formationRisk.formation.age 
+        },
+      },
+      wellStructureImage: defaultWellDetailsData.wellStructureImage,
+      offsetEvents: mappedOffsetEvents.length > 0 ? mappedOffsetEvents : defaultWellDetailsData.offsetEvents,
+      analytics: defaultWellDetailsData.analytics,
       otherInformation: {
         ...defaultWellDetailsData.otherInformation,
+        formationTops: mappedFormationTops.length > 0 ? mappedFormationTops : defaultWellDetailsData.otherInformation.formationTops,
         lessonsLearned: incidents.length > 0 ? incidents.map((inc: any) => ({
           category: inc.incident_type,
           description: `Severity: ${inc.severity || 'Medium'}. Form: ${inc.formation_name || 'N/A'}. Depth: ${inc.depth_m || 'N/A'}m.`,
           recommendation: inc.mitigation_sop || 'Monitor closely and review procedures.'
         })) : defaultWellDetailsData.otherInformation.lessonsLearned,
-        documents: documents.length > 0 ? documents : defaultWellDetailsData.otherInformation.documents,
+        documents: documents.length > 0 ? documents : defaultWellDetailsData.otherInformation.documents
       }
-      // If we had telemetry mapping, we'd map telemetry to DrillingAnalyticsData here.
-      // For now we preserve the robust default visuals but override if real data is structured correctly.
     };
   } catch(e) {
     return { ...defaultWellDetailsData, header: { ...defaultWellDetailsData.header, wellId } };

@@ -13,8 +13,10 @@ export const incidentService = {
     return response.data.incidents || [];
   },
 
-  async correlateFormations(incidentId: string): Promise<any> {
-    const response = await apiClient.post('/api/v1/knowledge/correlate', { incident_id: incidentId });
+  async correlateFormations(formationName: string): Promise<any> {
+    const response = await apiClient.get('/api/v1/knowledge/correlate', {
+      params: { formation_name: formationName }
+    });
     return response.data;
   },
 

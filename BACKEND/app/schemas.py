@@ -57,6 +57,8 @@ class WellResponse(BaseModel):
 
 class NearbyWellResult(BaseModel):
     well_name: str
+    latitude: float
+    longitude: float
     distance_km: float
     target_depth_m: float
     basin: str
