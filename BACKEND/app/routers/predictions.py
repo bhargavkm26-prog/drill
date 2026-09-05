@@ -109,7 +109,8 @@ async def predict_drilling_risk(
     source_document = "N/A"
 
     if (
-        prediction["alert"]
+        prediction["severity"] in ["WARNING", "CRITICAL"]
+        and prediction["active_warnings"]
         and prediction["active_warnings"][0] != "None"
     ):
         primary_warning = prediction["active_warnings"][0]

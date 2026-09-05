@@ -115,6 +115,11 @@ async def upload_report(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # Extract text synchronously for the demo so the frontend can display it immediately
+    raw_text = ""
+    if file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.pdf')):
+        raw_text = ocr_service.extract_text(file_path)
+
     background_tasks.add_task(_process_directory, staging_dir, file.filename)
 
     logger.info(f"Document '{file.filename}' queued by {user['username']}")
@@ -122,6 +127,7 @@ async def upload_report(
         "status": "queued",
         "message": f"Document '{file.filename}' queued for Neural OCR & vector indexing.",
         "uploaded_by": user["username"],
+        "extracted_text": raw_text
     }
 
 

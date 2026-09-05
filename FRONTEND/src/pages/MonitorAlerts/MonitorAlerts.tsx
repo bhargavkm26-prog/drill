@@ -788,10 +788,7 @@ function MonitorAlerts() {
                 <div className="p-5 bg-white rounded-xl border border-gray-100 shadow-sm space-y-3">
                   <p className="text-sm font-bold text-gray-900">Risk Level: <span className={predictionResult.risk_level === 'HIGH' ? 'text-red-500' : 'text-amber-500'}>{predictionResult.risk_level}</span> <span className="text-gray-400 font-normal">({Math.round(predictionResult.risk_probability * 100)}%)</span></p>
                   <p className="text-sm text-gray-700"><span className="font-bold text-gray-900">Primary Risk:</span> {predictionResult.primary_risk_factor}</p>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                    <p className="text-xs text-gray-500 font-semibold mb-2 uppercase tracking-wider">AI Explanation</p>
-                    <p className="text-sm text-gray-700 leading-relaxed">{predictionResult.ai_explanation}</p>
-                  </div>
+
                   <div className="pt-2">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Contributors</p>
                     <div className="flex flex-wrap gap-2">

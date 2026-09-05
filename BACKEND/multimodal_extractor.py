@@ -26,7 +26,7 @@ class ProductionDocumentIntelligence:
                 doc = pymupdf.open(file_path)
                 for page_num in range(len(doc)):
                     page = doc.load_page(page_num)
-                    pix = page.get_pixmap(dpi=300)
+                    pix = page.get_pixmap(dpi=150)
                     img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
                     images_to_process.append(np.array(img))
             

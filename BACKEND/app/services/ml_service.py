@@ -372,6 +372,9 @@ class MLService:
                 "Elevated Mud Loss Risk"
             )
 
+        if physics_warnings:
+            active_warnings.extend(physics_warnings)
+
         # =====================================================
         # SEVERITY
         # =====================================================

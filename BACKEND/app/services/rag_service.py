@@ -3,9 +3,8 @@ import logging
 from typing import List, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
-# from langchain_text_splitters import RecursiveCharacterTextSplitter
-# from langchain_community.embeddings import HuggingFaceEmbeddings
-HuggingFaceEmbeddings = None
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from app.config import settings
 
 logger = logging.getLogger("NWIS.RAG")
@@ -20,7 +19,7 @@ class RAGService:
     def __init__(self):
         self._client: Optional[QdrantClient] = None
         self._embeddings = None
-        self._splitter = None
+        self._splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 
     @property
     def client(self) -> QdrantClient:
@@ -33,8 +32,7 @@ class RAGService:
     def embeddings(self):
         if self._embeddings is None:
             logger.info("Loading embedding model (all-MiniLM-L6-v2)...")
-            # self._embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            self._embeddings = None
+            self._embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
             logger.info("Embedding model ready.")
         return self._embeddings
 

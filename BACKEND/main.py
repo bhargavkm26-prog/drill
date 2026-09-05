@@ -189,7 +189,7 @@ def process_bulk_directory_background(directory_path: str, source_name: str):
         if os.path.exists(directory_path):
             shutil.rmtree(directory_path)
 
-@app.post("/upload-report")
+@app.post("/api/v1/documents/upload")
 async def upload_drilling_report(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     staging_dir = f"temp_uploads/single_{uuid.uuid4()}"
     os.makedirs(staging_dir, exist_ok=True)
@@ -198,10 +198,19 @@ async def upload_drilling_report(background_tasks: BackgroundTasks, file: Upload
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
+    # Extract text synchronously for the demo
+    raw_text = ""
+    if file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.pdf')):
+        raw_text = doc_intelligence.extract_text_from_document(file_path)
+        
     background_tasks.add_task(process_bulk_directory_background, staging_dir, file.filename)
-    return {"status": "queued", "message": f"Document '{file.filename}' queued for Neural VLM OCR & vector indexing."}
+    return {
+        "status": "success", 
+        "message": f"Document '{file.filename}' processed.",
+        "extracted_text": raw_text
+    }
 
-@app.post("/upload-bulk-archive")
+@app.post("/api/v1/documents/upload-bulk")
 async def upload_bulk_archive(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Only .zip archives are supported.")
@@ -222,7 +231,7 @@ async def upload_bulk_archive(background_tasks: BackgroundTasks, file: UploadFil
 class SyncRequest(BaseModel):
     directory_path: str
 
-@app.post("/sync-data-lake")
+@app.post("/api/v1/documents/sync")
 async def sync_data_lake(request: SyncRequest, background_tasks: BackgroundTasks):
     if not os.path.isdir(request.directory_path):
         raise HTTPException(status_code=404, detail="Directory path not found on server.")
@@ -252,7 +261,7 @@ class RigTelemetry(BaseModel):
     SPP_trend: float = 0.0
     ROP_trend: float = 0.0
 
-@app.post("/predict")
+@app.post("/api/v1/predict")
 async def predict_drilling_risk(telemetry: RigTelemetry):
     if not model_stuck or not model_loss:
         raise HTTPException(status_code=500, detail="ML Models not initialized.")
@@ -316,7 +325,7 @@ async def predict_drilling_risk(telemetry: RigTelemetry):
     await manager.broadcast(response_payload)
     return response_payload
 
-@app.get("/telemetry/history")
+@app.get("/api/v1/telemetry/history")
 async def get_telemetry_history():
     return telemetry_history
 
@@ -327,7 +336,7 @@ class DocumentUpdate(BaseModel):
     new_raw_text: str
     updated_by: str = "Engineer"
 
-@app.get("/documents/{doc_id}")
+@app.get("/api/v1/documents/{doc_id}")
 async def get_document(doc_id: str):
     db = SessionLocal()
     try:
@@ -345,7 +354,7 @@ async def get_document(doc_id: str):
     finally:
         db.close()
 
-@app.put("/documents/{doc_id}")
+@app.put("/api/v1/documents/{doc_id}")
 async def update_and_sync_document(doc_id: str, payload: DocumentUpdate):
     db = SessionLocal()
     try:
@@ -404,7 +413,7 @@ async def update_and_sync_document(doc_id: str, payload: DocumentUpdate):
         db.close()
 
 
-@app.get("/documents")
+@app.get("/api/v1/documents")
 async def list_recent_documents():
     db = SessionLocal()
     try:

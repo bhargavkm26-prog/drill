@@ -11,12 +11,17 @@ export const OtherInformationCards: React.FC<OtherInformationCardsProps> = ({ da
 
   // Selected PDF Document for Modal Preview
   const [previewDocument, setPreviewDocument] = useState<WellDocumentItem | null>(null);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       try {
-        await documentService.uploadReport(e.target.files[0], 'NHK-09');
-        alert('File uploaded successfully!');
+        const response = await documentService.uploadReport(e.target.files[0], 'NHK-09');
+        if (response.extracted_text) {
+          setExtractedText(response.extracted_text);
+        } else {
+          alert('File uploaded successfully!');
+        }
       } catch (err) {
         console.error(err);
         alert('Failed to upload file');
@@ -387,6 +392,41 @@ export const OtherInformationCards: React.FC<OtherInformationCardsProps> = ({ da
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Download PDF Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* EXTRACTED TEXT MODAL */}
+      {extractedText && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setExtractedText(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl border border-gray-200 max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-lg font-bold text-gray-900">Extracted Document Text</h3>
+              <button
+                type="button"
+                onClick={() => setExtractedText(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 rounded-xl border border-gray-100 text-sm whitespace-pre-wrap font-mono text-gray-800">
+              {extractedText}
+            </div>
+            <div className="flex items-center justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setExtractedText(null)}
+                className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>

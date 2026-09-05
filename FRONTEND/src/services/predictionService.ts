@@ -3,15 +3,15 @@ import apiClient from '../api/client';
 export const predictionService = {
   async predictDrillingRisk(data: any): Promise<any> {
     const payload = {
-      Depth: data.depth_m || 3000,
+      Depth: data.depth_m ?? 3000,
       ROP_mean_5min: 25.0,
-      WOB_mean: data.wob_tonnes || 15.0,
-      RPM_mean: data.rpm || 120.0,
+      WOB_mean: data.wob_tonnes ?? 15.0,
+      RPM_mean: data.rpm ?? 120.0,
       Torque_mean_5min: 15000.0,
       SPP_mean: 2500.0,
-      MudWeight: data.mud_weight_ppg || 10.0,
-      ECD: (data.mud_weight_ppg || 10.0) + 0.5,
-      FlowRate: data.flow_rate_gpm || 500.0,
+      MudWeight: data.mud_weight_ppg ?? 10.0,
+      ECD: (data.mud_weight_ppg ?? 10.0) + 0.5,
+      FlowRate: data.flow_rate_gpm ?? 500.0,
       HistoricalLossCount: 0,
       HistoricalStuckPipeCount: 0,
       FormationRiskScore: 0.5,
